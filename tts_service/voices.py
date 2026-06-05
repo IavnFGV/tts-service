@@ -8,30 +8,30 @@ class Voice:
     model_name: str
 
 VOICE_CATALOG: Dict[str, Voice] = {
-    "en_US_ljspeech": Voice(
-        id="en_US_ljspeech",
-        label="English LJSpeech (female)",
-        model_name="tts_models/en/ljspeech/tacotron2-DDC",
+    "en_US_amy": Voice(
+        id="en_US_amy",
+        label="American English Amy (female)",
+        model_name="en_US-amy-medium",
     ),
-    "en_US_ljspeech_vits": Voice(
-        id="en_US_ljspeech_vits",
-        label="English LJSpeech VITS (female)",
-        model_name="tts_models/en/ljspeech/vits",
+    "en_US_lessac": Voice(
+        id="en_US_lessac",
+        label="American English Lessac (female)",
+        model_name="en_US-lessac-medium",
     ),
-    "en_US_ek1": Voice(
-        id="en_US_ek1",
-        label="English EK1 (male)",
-        model_name="tts_models/en/ek1/tacotron2",
+    "en_US_ryan": Voice(
+        id="en_US_ryan",
+        label="American English Ryan (male)",
+        model_name="en_US-ryan-medium",
     ),
-    "en_US_blizzard2013": Voice(
-        id="en_US_blizzard2013",
-        label="English Blizzard2013 (male)",
-        model_name="tts_models/en/blizzard2013/capacitron-t2-c50",
+    "en_GB_alba": Voice(
+        id="en_GB_alba",
+        label="British English Alba (female)",
+        model_name="en_GB-alba-medium",
     ),
-    "en_US_jenny": Voice(
-        id="en_US_jenny",
-        label="English Jenny (youthful female)",
-        model_name="tts_models/en/jenny/jenny",
+    "en_GB_alan": Voice(
+        id="en_GB_alan",
+        label="British English Alan (male)",
+        model_name="en_GB-alan-medium",
     ),
 }
 

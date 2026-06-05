@@ -5,7 +5,7 @@ Standalone internal TTS microservice for local speech synthesis.
 ## What it does
 - Exposes internal HTTP endpoints: `/healthz`, `/voices`, `/v1/synthesize`
 - Accepts text and a configured voice id
-- Synthesizes speech locally with Coqui TTS
+- Synthesizes speech locally with Piper
 - Returns final audio as `audio/ogg` (Opus)
 
 ## Start locally
@@ -41,7 +41,7 @@ Secrets required by the workflow:
 - `VPS_SSH_KEY`
 
 ## CPU-only operation
-This service is configured to run on CPU only: the implementation uses `torch==...+cpu` and `TTS(..., gpu=False)`, so it does not require a GPU device.
+This service is configured to run on CPU only and does not require a GPU device.
 
 For a low-resource VPS like `2 vCPU / 4 GB RAM`, keep `TTS_MAX_CONCURRENT_SYNTHESIS=1` and use short text inputs. That is the safest configuration for reliable operation.
 
@@ -50,18 +50,18 @@ Use `.env` or environment variables. See `.env.example`.
 
 ## Architecture decisions
 - FastAPI for a small internal HTTP API
-- Coqui TTS for local model-based synthesis
+- Piper for local model-based synthesis
 - `ffmpeg` for WAV-to-OGG/Opus conversion
 - voice catalog is fixed and validated; unknown voice ids fail closed
 - concurrency limited by `TTS_MAX_CONCURRENT_SYNTHESIS`
-- voice downloads are persisted under `TTS_VOICE_DIR`
+- Piper model downloads are persisted under `TTS_VOICE_DIR`
 
 ## Available voices
-The service ships with five English voices:
-- `en_US_ljspeech` — English LJSpeech (female)
-- `en_US_ljspeech_vits` — English LJSpeech VITS (female)
-- `en_US_ek1` — English EK1 (male)
-- `en_US_blizzard2013` — English Blizzard2013 (male)
-- `en_US_jenny` — English Jenny (youthful female)
+The service ships with five English Piper voices:
+- `en_US_amy` — American English Amy (female)
+- `en_US_lessac` — American English Lessac (female)
+- `en_US_ryan` — American English Ryan (male)
+- `en_GB_alba` — British English Alba (female)
+- `en_GB_alan` — British English Alan (male)
 
 Use `/voices` to discover them at runtime and pass `voice_id` to `/v1/synthesize`.

@@ -1,25 +1,18 @@
 from __future__ import annotations
+
 import asyncio
-import os
 import tempfile
+import wave
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Dict
 
-import numpy as np
-import torch
-from TTS.api import TTS
+from piper.download_voices import download_voice
+from piper.voice import PiperVoice
 
 from .audio import convert_wav_to_ogg
 from .config import Settings
 from .voices import VoiceRegistry, Voice
-
-# Ensure torch can safely load Coqui checkpoints that require numpy scalar support.
-# This is needed for newer PyTorch versions when weights_only loading is active.
-try:
-    torch.serialization.add_safe_globals([np.core.multiarray.scalar])
-except Exception:
-    pass
 
 
 class SynthesizerAdapter:
@@ -27,7 +20,7 @@ class SynthesizerAdapter:
         self.settings = settings
         self.registry = registry
         self.semaphore = asyncio.Semaphore(settings.max_concurrent_synthesis)
-        self.tts_clients: Dict[str, TTS] = {}
+        self.voices: Dict[str, PiperVoice] = {}
         self.executor = ThreadPoolExecutor(max_workers=settings.max_concurrent_synthesis)
 
     async def synthesize_ogg(self, text: str, voice_id: str) -> bytes:
@@ -43,25 +36,26 @@ class SynthesizerAdapter:
             )
 
     def _render(self, voice: Voice, text: str) -> bytes:
-        os.environ.setdefault("TTS_HOME", str(self.settings.voice_dir))
-        tts = self._get_tts(voice)
-
+        piper_voice = self._get_voice(voice)
         with tempfile.TemporaryDirectory() as tmpdir:
             wav_path = Path(tmpdir) / "output.wav"
             ogg_path = Path(tmpdir) / "output.ogg"
-            tts.tts_to_file(text=text, file_path=str(wav_path))
+            with wave.open(str(wav_path), "wb") as wav_file:
+                piper_voice.synthesize_wav(text, wav_file)
             convert_wav_to_ogg(wav_path, ogg_path)
             return ogg_path.read_bytes()
 
-    def _get_tts(self, voice: Voice) -> TTS:
-        if voice.id not in self.tts_clients:
-            self.tts_clients[voice.id] = self._load_tts(voice)
-        return self.tts_clients[voice.id]
+    def _get_voice(self, voice: Voice) -> PiperVoice:
+        if voice.id not in self.voices:
+            self.voices[voice.id] = self._load_voice(voice)
+        return self.voices[voice.id]
 
-    def _load_tts(self, voice: Voice) -> TTS:
-        os.environ.setdefault("TTS_HOME", str(self.settings.voice_dir))
-        return TTS(model_name=voice.model_name, progress_bar=False, gpu=False)
+    def _load_voice(self, voice: Voice) -> PiperVoice:
+        self.settings.voice_dir.mkdir(parents=True, exist_ok=True)
+        download_voice(voice.model_name, self.settings.voice_dir)
+        model_path = self.settings.voice_dir / f"{voice.model_name}.onnx"
+        return PiperVoice.load(model_path, download_dir=self.settings.voice_dir)
 
     def prefetch_models(self) -> None:
         for voice in self.registry.voices:
-            self._get_tts(voice)
+            self._get_voice(voice)
