@@ -54,7 +54,7 @@ class SynthesizerAdapter:
         self.settings.voice_dir.mkdir(parents=True, exist_ok=True)
         download_voice(voice.model_name, self.settings.voice_dir)
         model_path = self.settings.voice_dir / f"{voice.model_name}.onnx"
-        return PiperVoice.load(model_path, download_dir=self.settings.voice_dir)
+        return PiperVoice.load(model_path)
 
     def prefetch_models(self) -> None:
         for voice in self.registry.voices:
