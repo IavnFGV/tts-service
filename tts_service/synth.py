@@ -6,11 +6,20 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Dict
 
+import numpy as np
+import torch
 from TTS.api import TTS
 
 from .audio import convert_wav_to_ogg
 from .config import Settings
 from .voices import VoiceRegistry, Voice
+
+# Ensure torch can safely load Coqui checkpoints that require numpy scalar support.
+# This is needed for newer PyTorch versions when weights_only loading is active.
+try:
+    torch.serialization.add_safe_globals([np.core.multiarray.scalar])
+except Exception:
+    pass
 
 
 class SynthesizerAdapter:

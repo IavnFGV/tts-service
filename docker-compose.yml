@@ -1,16 +1,24 @@
-version: "3.9"
-
 services:
-  tts_service:
-    build: .
-    ports:
-      - "8000:8000"
+  tts:
+    build:
+      context: .
     environment:
       TTS_HOST: "0.0.0.0"
       TTS_PORT: "8000"
       TTS_VOICE_DIR: "/data/voices"
       TTS_MAX_CONCURRENT_SYNTHESIS: "1"
-      TTS_SYNTHESIS_TIMEOUT_SEC: "30"
+      TTS_SYNTHESIS_TIMEOUT_SEC: "120"
+    expose:
+      - "8000"
     volumes:
-      - ./data/voices:/data/voices
+      - /srv/services/tts/voices:/data/voices
     restart: unless-stopped
+    networks:
+      edge:
+        aliases:
+          - tts-service
+
+networks:
+  edge:
+    external: true
+    name: edge

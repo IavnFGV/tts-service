@@ -1,0 +1,178 @@
+name: Deploy service to VPS
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        run: python -m pytest
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main')
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          port: ${{ secrets.VPS_PORT }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -euo pipefail
+
+            SERVICE_NAME="tts-service"
+            STACKS_DIR="/opt/dockge/stacks"
+            SERVICE_DIR="${STACKS_DIR}/${SERVICE_NAME}"
+            REGISTER_HELPER="/usr/local/bin/infra-vps-register"
+            DATA_ROOT="/srv/services/${SERVICE_NAME}"
+            STATIC_ROOT="/srv/service-static/${SERVICE_NAME}"
+            SYNC_ROOT="/srv/drive-sync/services/${SERVICE_NAME}"
+
+            log_dir_state() {
+              local path="$1"
+              if sudo test -d "${path}"; then
+                echo "[deploy] directory already exists: ${path}"
+              else
+                echo "[deploy] directory will be created: ${path}"
+              fi
+            }
+
+            show_dir_state() {
+              local path="$1"
+              echo "[deploy] ls -ld ${path}"
+              sudo ls -ld "${path}" || true
+            }
+
+            echo "[deploy] service=${SERVICE_NAME}"
+            echo "[deploy] stacks_dir=${STACKS_DIR}"
+            echo "[deploy] service_dir=${SERVICE_DIR}"
+            sudo mkdir -p "${STACKS_DIR}"
+            log_dir_state "${SERVICE_DIR}"
+            sudo mkdir -p "${SERVICE_DIR}"
+            sudo chown -R "${USER}:${USER}" "${SERVICE_DIR}"
+            show_dir_state "${STACKS_DIR}"
+            show_dir_state "${SERVICE_DIR}"
+
+            if [ ! -d "${SERVICE_DIR}/.git" ]; then
+              echo "[deploy] cloning repository into ${SERVICE_DIR}"
+              rm -rf "${SERVICE_DIR}"
+              git clone "https://github.com/${{ github.repository }}.git" "${SERVICE_DIR}"
+            else
+              echo "[deploy] repository already present in ${SERVICE_DIR}"
+            fi
+
+            cd "${SERVICE_DIR}"
+            echo "[deploy] current revision before fetch: $(git rev-parse --short HEAD 2>/dev/null || echo missing)"
+
+            git fetch --all --prune
+            git reset --hard origin/main
+            echo "[deploy] current revision after reset: $(git rev-parse --short HEAD)"
+
+            if [ ! -f .env ]; then
+              echo "ERROR: .env is missing in ${SERVICE_DIR}. Create it manually on the VPS before deploy."
+              exit 1
+            fi
+            echo "[deploy] found ${SERVICE_DIR}/.env"
+
+            log_dir_state "${DATA_ROOT}"
+            log_dir_state "${DATA_ROOT}/data"
+            log_dir_state "${DATA_ROOT}/logs"
+            log_dir_state "${DATA_ROOT}/backups"
+            log_dir_state "${STATIC_ROOT}"
+            log_dir_state "${SYNC_ROOT}"
+            log_dir_state "${SYNC_ROOT}/backups"
+            sudo mkdir -p "${DATA_ROOT}/data"
+            sudo mkdir -p "${DATA_ROOT}/logs"
+            sudo mkdir -p "${DATA_ROOT}/backups"
+            sudo mkdir -p "${STATIC_ROOT}"
+            sudo mkdir -p "${SYNC_ROOT}/backups"
+            sudo chown -R "${USER}:${USER}" "${DATA_ROOT}" || true
+            sudo chown -R "${USER}:${USER}" "${STATIC_ROOT}" || true
+            sudo chown -R "${USER}:${USER}" "${SYNC_ROOT}" || true
+            sudo chown -R "${USER}:${USER}" "${SERVICE_DIR}" || true
+            show_dir_state "${DATA_ROOT}"
+            show_dir_state "${DATA_ROOT}/data"
+            show_dir_state "${DATA_ROOT}/logs"
+            show_dir_state "${DATA_ROOT}/backups"
+            show_dir_state "${STATIC_ROOT}"
+            show_dir_state "${SYNC_ROOT}"
+            show_dir_state "${SYNC_ROOT}/backups"
+
+            if [ -f "${SERVICE_DIR}/assets/images/no-image.png" ]; then
+              echo "[deploy] syncing placeholder assets into host runtime storage"
+              sudo mkdir -p "${STATIC_ROOT}/images"
+              sudo cp "${SERVICE_DIR}/assets/images/no-image.png" "${STATIC_ROOT}/images/no-image.png"
+              sudo chmod 644 "${STATIC_ROOT}/images/no-image.png"
+              sudo chown "${USER}:${USER}" "${STATIC_ROOT}/images/no-image.png" || true
+              ls -l "${STATIC_ROOT}/images/no-image.png"
+            else
+              echo "[deploy] no placeholder image found; continuing without static asset sync"
+            fi
+
+            export TTS_SERVICE_VERSION="main-${{ github.run_number }}"
+            export TTS_SERVICE_GIT_COMMIT="${{ github.sha }}"
+            export TTS_SERVICE_BUILD_TIME_UTC="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            export TTS_SERVICE_BUILD_REF="${{ github.ref }}"
+            export TTS_SERVICE_ENV_NAME="production"
+
+            if docker network inspect edge >/dev/null 2>&1; then
+              echo "[deploy] docker network already exists: edge"
+            else
+              echo "[deploy] creating docker network: edge"
+              docker network create edge
+            fi
+
+            echo "[deploy] running docker compose up -d --build"
+            docker compose up -d --build
+            echo "[deploy] docker compose ps"
+            docker compose ps
+
+            if [ -x "${REGISTER_HELPER}" ] && [ -f "${SERVICE_DIR}/infra/service.env" ]; then
+              echo "[deploy] registering service with ${REGISTER_HELPER}"
+              sudo "${REGISTER_HELPER}" \
+                --card "${SERVICE_DIR}/infra/service.env" \
+                --service-dir "${SERVICE_DIR}"
+            else
+              echo "[deploy] infra registration skipped; helper or service card unavailable"
+            fi

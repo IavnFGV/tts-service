@@ -25,6 +25,21 @@ Standalone internal TTS microservice for local speech synthesis.
    ```
 2. The service will be available on `http://0.0.0.0:8000`.
 
+## Deployment
+This repository includes a GitHub Actions deployment workflow at `.github/workflows/deploy.yml`.
+It runs tests, then deploys to a VPS over SSH using `docker compose up -d --build`.
+
+On the target host, the workflow expects:
+- a `.env` file present in the checked-out service directory
+- Docker and Docker Compose installed
+- optional `infra/service.env` for service registration if your VPS infra uses it
+
+Secrets required by the workflow:
+- `VPS_HOST`
+- `VPS_USER`
+- `VPS_PORT`
+- `VPS_SSH_KEY`
+
 ## CPU-only operation
 This service is configured to run on CPU only: the implementation uses `torch==...+cpu` and `TTS(..., gpu=False)`, so it does not require a GPU device.
 
