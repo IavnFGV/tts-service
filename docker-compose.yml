@@ -1,0 +1,16 @@
+version: "3.9"
+
+services:
+  tts_service:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      TTS_HOST: "0.0.0.0"
+      TTS_PORT: "8000"
+      TTS_VOICE_DIR: "/data/voices"
+      TTS_MAX_CONCURRENT_SYNTHESIS: "1"
+      TTS_SYNTHESIS_TIMEOUT_SEC: "30"
+    volumes:
+      - ./data/voices:/data/voices
+    restart: unless-stopped

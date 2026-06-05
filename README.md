@@ -1,0 +1,52 @@
+# Internal TTS Service
+
+Standalone internal TTS microservice for local speech synthesis.
+
+## What it does
+- Exposes internal HTTP endpoints: `/healthz`, `/voices`, `/v1/synthesize`
+- Accepts text and a configured voice id
+- Synthesizes speech locally with Coqui TTS
+- Returns final audio as `audio/ogg` (Opus)
+
+## Start locally
+1. Install dependencies:
+   ```bash
+   python -m pip install -r requirements.txt
+   ```
+2. Run service:
+   ```bash
+   python -m tts_service
+   ```
+
+## Start with Docker Compose
+1. Build and start the service:
+   ```bash
+   docker compose up --build
+   ```
+2. The service will be available on `http://0.0.0.0:8000`.
+
+## CPU-only operation
+This service is configured to run on CPU only: the implementation uses `torch==...+cpu` and `TTS(..., gpu=False)`, so it does not require a GPU device.
+
+For a low-resource VPS like `2 vCPU / 4 GB RAM`, keep `TTS_MAX_CONCURRENT_SYNTHESIS=1` and use short text inputs. That is the safest configuration for reliable operation.
+
+## Configuration
+Use `.env` or environment variables. See `.env.example`.
+
+## Architecture decisions
+- FastAPI for a small internal HTTP API
+- Coqui TTS for local model-based synthesis
+- `ffmpeg` for WAV-to-OGG/Opus conversion
+- voice catalog is fixed and validated; unknown voice ids fail closed
+- concurrency limited by `TTS_MAX_CONCURRENT_SYNTHESIS`
+- voice downloads are persisted under `TTS_VOICE_DIR`
+
+## Available voices
+The service ships with five English voices:
+- `en_US_ljspeech` — English LJSpeech (female)
+- `en_US_ljspeech_vits` — English LJSpeech VITS (female)
+- `en_US_ek1` — English EK1 (male)
+- `en_US_blizzard2013` — English Blizzard2013 (male)
+- `en_US_jenny` — English Jenny (youthful female)
+
+Use `/voices` to discover them at runtime and pass `voice_id` to `/v1/synthesize`.

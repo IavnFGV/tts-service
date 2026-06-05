@@ -1,0 +1,28 @@
+{
+  "name": "TtsService",
+  "image": "mcr.microsoft.com/devcontainers/python:3.12-bookworm",
+  "remoteUser": "vscode",
+  "containerEnv": {
+    "PIP_CACHE_DIR": "/home/vscode/.cache/pip"
+  },
+  "mounts": [
+    "source=${localEnv:HOME}/.codex,target=/home/vscode/.codex,type=bind",
+    "source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh,type=bind,readonly",
+    "source=englishbot-pip-cache,target=/home/vscode/.cache/pip,type=volume"
+  ],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+        "openai.chatgpt",
+        "k--kato.intellij-idea-keybindings",
+        "ms-azuretools.vscode-containers"  
+      ]
+    }
+  },
+  "postCreateCommand": "python -m pip install -r requirements.txt",
+  "postStartCommand": "sudo mkdir -p /home/vscode/.cache /home/vscode/.cache/pip && sudo chown -R vscode:vscode /home/vscode/.cache"
+}
+

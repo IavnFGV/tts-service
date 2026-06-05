@@ -1,0 +1,30 @@
+.venv/
+env/
+venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.cache
+.pytest_cache/
+.DS_Store
+*.log
+*.sqlite3
+*.db
+node_modules/
+*.egg-info/
+dist/
+build/
+# Local environment files
+.env
+.env.*
+# Voice model cache and runtime artifacts
+/data/voices/
+**/data/voices/
+# IDE/editor settings
+.vscode/
+.idea/
+
+# Ignore generated Python bytecode and temp files
+*.swp
+*~
