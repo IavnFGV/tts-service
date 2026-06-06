@@ -5,6 +5,13 @@
   "containerEnv": {
     "PIP_CACHE_DIR": "/home/vscode/.cache/pip"
   },
+  "forwardPorts": [8000],
+  "portsAttributes": {
+    "8000": {
+      "label": "tts-service",
+      "onAutoForward": "notify"
+    }
+  },
   "mounts": [
     "source=${localEnv:HOME}/.codex,target=/home/vscode/.codex,type=bind",
     "source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh,type=bind,readonly",
@@ -22,7 +29,6 @@
       ]
     }
   },
-  "postCreateCommand": "python -m pip install -r requirements.txt",
+  "postCreateCommand": "sudo apt-get update && sudo apt-get install -y ffmpeg espeak-ng && python -m pip install -r requirements.txt",
   "postStartCommand": "sudo mkdir -p /home/vscode/.cache /home/vscode/.cache/pip && sudo chown -R vscode:vscode /home/vscode/.cache"
 }
-
