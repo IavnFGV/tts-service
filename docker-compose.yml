@@ -2,12 +2,11 @@ services:
   tts:
     build:
       context: .
+    env_file:
+      - .env
     environment:
-      TTS_HOST: "0.0.0.0"
-      TTS_PORT: "8000"
+      # Container runtime path differs from local direct Python execution.
       TTS_VOICE_DIR: "/data/voices"
-      TTS_MAX_CONCURRENT_SYNTHESIS: "1"
-      TTS_SYNTHESIS_TIMEOUT_SEC: "120"
     expose:
       - "8000"
     volumes:
