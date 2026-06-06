@@ -32,7 +32,7 @@ It runs tests, then deploys to a VPS over SSH using `docker compose up -d --buil
 On the target host, the workflow expects:
 - a `.env` file present in the checked-out service directory
 - Docker and Docker Compose installed
-- optional `infra/service.env` for service registration if your VPS infra uses it
+- a writable host directory for persisted voices at `/srv/services/tts/voices`
 
 Secrets required by the workflow:
 - `VPS_HOST`
@@ -65,3 +65,27 @@ The service ships with five English Piper voices:
 - `en_GB_alan` — British English Alan (male)
 
 Use `/voices` to discover them at runtime and pass `voice_id` to `/v1/synthesize`.
+
+## GitHub secrets helper
+If you want to load multiple GitHub Actions secrets into a repository from one file, use:
+
+```bash
+python scripts/gh_set_repo_secrets.py owner/repo scripts/github-secrets.example --dry-run
+export GITHUB_TOKEN=github_pat_or_fine_grained_token
+python scripts/gh_set_repo_secrets.py owner/repo path/to/secrets.txt
+```
+
+File format:
+
+```text
+VPS_HOST=203.0.113.10
+VPS_USER=deploy
+VPS_PORT=22
+VPS_SSH_KEY<<EOF
+-----BEGIN OPENSSH PRIVATE KEY-----
+...
+-----END OPENSSH PRIVATE KEY-----
+EOF
+```
+
+The script uses the GitHub REST API directly. Set `GITHUB_TOKEN` or `GH_TOKEN` before running it.

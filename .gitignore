@@ -18,6 +18,8 @@ build/
 # Local environment files
 .env
 .env.*
+token
+scripts/github-secrets
 # Voice model cache and runtime artifacts
 /data/voices/
 **/data/voices/

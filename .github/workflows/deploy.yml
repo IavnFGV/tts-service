@@ -25,7 +25,7 @@ jobs:
           cache-dependency-path: requirements.txt
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: pip install -r requirements.txt pytest httpx2
 
       - name: Run tests
         run: python -m pytest
@@ -38,19 +38,6 @@ jobs:
       (github.event_name == 'push' && github.ref == 'refs/heads/main')
 
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: "pip"
-          cache-dependency-path: requirements.txt
-
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -64,10 +51,7 @@ jobs:
             SERVICE_NAME="tts-service"
             STACKS_DIR="/opt/dockge/stacks"
             SERVICE_DIR="${STACKS_DIR}/${SERVICE_NAME}"
-            REGISTER_HELPER="/usr/local/bin/infra-vps-register"
-            DATA_ROOT="/srv/services/${SERVICE_NAME}"
-            STATIC_ROOT="/srv/service-static/${SERVICE_NAME}"
-            SYNC_ROOT="/srv/drive-sync/services/${SERVICE_NAME}"
+            VOICE_ROOT="/srv/services/tts/voices"
 
             log_dir_state() {
               local path="$1"
@@ -115,40 +99,11 @@ jobs:
             fi
             echo "[deploy] found ${SERVICE_DIR}/.env"
 
-            log_dir_state "${DATA_ROOT}"
-            log_dir_state "${DATA_ROOT}/data"
-            log_dir_state "${DATA_ROOT}/logs"
-            log_dir_state "${DATA_ROOT}/backups"
-            log_dir_state "${STATIC_ROOT}"
-            log_dir_state "${SYNC_ROOT}"
-            log_dir_state "${SYNC_ROOT}/backups"
-            sudo mkdir -p "${DATA_ROOT}/data"
-            sudo mkdir -p "${DATA_ROOT}/logs"
-            sudo mkdir -p "${DATA_ROOT}/backups"
-            sudo mkdir -p "${STATIC_ROOT}"
-            sudo mkdir -p "${SYNC_ROOT}/backups"
-            sudo chown -R "${USER}:${USER}" "${DATA_ROOT}" || true
-            sudo chown -R "${USER}:${USER}" "${STATIC_ROOT}" || true
-            sudo chown -R "${USER}:${USER}" "${SYNC_ROOT}" || true
+            log_dir_state "${VOICE_ROOT}"
+            sudo mkdir -p "${VOICE_ROOT}"
+            sudo chown -R "${USER}:${USER}" "${VOICE_ROOT}" || true
             sudo chown -R "${USER}:${USER}" "${SERVICE_DIR}" || true
-            show_dir_state "${DATA_ROOT}"
-            show_dir_state "${DATA_ROOT}/data"
-            show_dir_state "${DATA_ROOT}/logs"
-            show_dir_state "${DATA_ROOT}/backups"
-            show_dir_state "${STATIC_ROOT}"
-            show_dir_state "${SYNC_ROOT}"
-            show_dir_state "${SYNC_ROOT}/backups"
-
-            if [ -f "${SERVICE_DIR}/assets/images/no-image.png" ]; then
-              echo "[deploy] syncing placeholder assets into host runtime storage"
-              sudo mkdir -p "${STATIC_ROOT}/images"
-              sudo cp "${SERVICE_DIR}/assets/images/no-image.png" "${STATIC_ROOT}/images/no-image.png"
-              sudo chmod 644 "${STATIC_ROOT}/images/no-image.png"
-              sudo chown "${USER}:${USER}" "${STATIC_ROOT}/images/no-image.png" || true
-              ls -l "${STATIC_ROOT}/images/no-image.png"
-            else
-              echo "[deploy] no placeholder image found; continuing without static asset sync"
-            fi
+            show_dir_state "${VOICE_ROOT}"
 
             export TTS_SERVICE_VERSION="main-${{ github.run_number }}"
             export TTS_SERVICE_GIT_COMMIT="${{ github.sha }}"
@@ -167,12 +122,3 @@ jobs:
             docker compose up -d --build
             echo "[deploy] docker compose ps"
             docker compose ps
-
-            if [ -x "${REGISTER_HELPER}" ] && [ -f "${SERVICE_DIR}/infra/service.env" ]; then
-              echo "[deploy] registering service with ${REGISTER_HELPER}"
-              sudo "${REGISTER_HELPER}" \
-                --card "${SERVICE_DIR}/infra/service.env" \
-                --service-dir "${SERVICE_DIR}"
-            else
-              echo "[deploy] infra registration skipped; helper or service card unavailable"
-            fi
