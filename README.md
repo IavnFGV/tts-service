@@ -5,6 +5,7 @@ Standalone internal TTS microservice for local speech synthesis.
 ## What it does
 - Exposes internal HTTP endpoints: `/healthz`, `/voices`, `/v1/synthesize`
 - Accepts text and a configured voice id
+- Optionally accepts a playback speed coefficient from `0.1` to `5.0`
 - Synthesizes speech locally with Piper
 - Returns final audio as `audio/ogg` (Opus)
 
@@ -65,6 +66,25 @@ The service ships with five English Piper voices:
 - `en_GB_alan` — British English Alan (male)
 
 Use `/voices` to discover them at runtime and pass `voice_id` to `/v1/synthesize`.
+
+## Synthesis request
+`POST /v1/synthesize` accepts JSON with:
+- `text` — required, normalized and length-limited text input
+- `voice_id` — required, must match one of the configured voices
+- `speed` — optional playback speed coefficient from `0.1` to `5.0`; defaults to `1.0`
+
+Example request:
+
+```json
+{
+  "text": "Hello world",
+  "voice_id": "en_US_amy",
+  "speed": 1.25
+}
+```
+
+When `speed` is omitted, the service uses `1.0`.
+Internally this is translated to Piper's `length_scale` as `1.0 / speed`, so values above `1.0` speak faster and values below `1.0` speak slower.
 
 ## GitHub secrets helper
 If you want to load multiple GitHub Actions secrets into a repository from one file, use:

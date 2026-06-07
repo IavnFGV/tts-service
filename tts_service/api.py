@@ -68,11 +68,16 @@ async def synthesize(request: SynthesizeRequest) -> Response:
 
     try:
         logger.info(
-            "Synthesis requested voice=%s text_length=%s",
+            "Synthesis requested voice=%s text_length=%s speed=%s",
             request.voice_id,
             len(request.text),
+            request.speed,
         )
-        audio_bytes = await synthesizer.synthesize_ogg(request.text, request.voice_id)
+        audio_bytes = await synthesizer.synthesize_ogg(
+            request.text,
+            request.voice_id,
+            speed=request.speed,
+        )
         return Response(content=audio_bytes, media_type="audio/ogg")
     except asyncio.TimeoutError:
         logger.exception("Synthesis timed out for voice=%s", request.voice_id)
