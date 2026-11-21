@@ -28,7 +28,12 @@ Standalone internal TTS microservice for local speech synthesis.
 
 ## Deployment
 This repository includes a GitHub Actions deployment workflow at `.github/workflows/deploy.yml`.
-It runs tests, then deploys to a VPS over SSH using `docker compose up -d --build`.
+It runs tests and a Python dependency audit, then deploys only `main` over SSH.
+Deployments are serialized, verify the SSH host fingerprint, and fast-forward to
+the exact tested commit without discarding server-local changes. Builds use
+`docker compose build --pull`, followed by `docker compose up -d --no-build --wait
+--wait-timeout 120`; the container must pass its internal `/healthz` check.
+An existing non-empty directory without a Git clone is never deleted automatically.
 
 On the target host, the workflow expects:
 - a `.env` file present in the checked-out service directory
@@ -40,6 +45,14 @@ Secrets required by the workflow:
 - `VPS_USER`
 - `VPS_PORT`
 - `VPS_SSH_KEY`
+- `VPS_HOST_FINGERPRINT`: the negotiated SSH host key's SHA256 fingerprint,
+  verified through an existing trusted connection (ECDSA on the current VPS)
+
+Set the GitHub default branch to `main`, matching the deployed branch. The
+Dependabot configuration schedules weekly pip and Actions update PRs for `main`;
+enable Dependabot alerts separately in repository settings. `.dockerignore`
+excludes runtime secrets, Git metadata, caches, and voice data from build contexts.
+PyNaCl is pinned to the patched 1.6.2 release and builds refresh pip to 26.3 or newer.
 
 ## CPU-only operation
 This service is configured to run on CPU only and does not require a GPU device.

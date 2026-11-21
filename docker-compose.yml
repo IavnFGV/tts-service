@@ -12,6 +12,12 @@ services:
     volumes:
       - /srv/services/tts/voices:/data/voices
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os, urllib.request; urllib.request.urlopen('http://127.0.0.1:' + os.getenv('TTS_PORT', '8000') + '/healthz', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 6
     networks:
       edge:
         aliases:

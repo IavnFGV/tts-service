@@ -8,7 +8,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg espeak-n
 
 COPY requirements.txt .
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install -r requirements.txt
+    python -m pip install --upgrade "pip>=26.3,<27" \
+    && python -m pip install -r requirements.txt
 
 COPY . .
 RUN mkdir -p /data/voices
