@@ -4,11 +4,17 @@ FROM python:3.12-slim
 ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg espeak-ng && rm -rf /var/lib/apt/lists/*
+# Debian security fixes land here before the upstream python image is rebuilt.
+# SECURITY_REFRESH (ISO week, set by the deploy workflow) re-runs this layer weekly.
+ARG SECURITY_REFRESH=0
+RUN apt-get update \
+    && apt-get upgrade -y --no-install-recommends \
+    && apt-get install -y --no-install-recommends ffmpeg espeak-ng \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
 RUN --mount=type=cache,target=/root/.cache/pip \
-    python -m pip install --upgrade "pip>=26.3,<27" \
+    python -m pip install --upgrade "pip>=26.3,<27" "setuptools>=78.1.1,<81" \
     && python -m pip install -r requirements.txt
 
 COPY . .
