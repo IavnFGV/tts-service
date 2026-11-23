@@ -5,7 +5,8 @@ ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 
 # Debian security fixes land here before the upstream python image is rebuilt.
-# SECURITY_REFRESH (ISO week, set by the deploy workflow) re-runs this layer weekly.
+# SECURITY_REFRESH (a timestamp, set by the deploy workflow) re-runs this layer
+# on every deploy, so the build cache never hides a fix.
 ARG SECURITY_REFRESH=0
 RUN apt-get update \
     && apt-get upgrade -y --no-install-recommends \

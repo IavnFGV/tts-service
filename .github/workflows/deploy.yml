@@ -173,7 +173,7 @@ jobs:
             fi
 
             echo "[deploy] building with a fresh base image and waiting for health"
-            docker compose build --pull --build-arg SECURITY_REFRESH="$(date -u +%G-%V)"
+            docker compose build --pull --build-arg SECURITY_REFRESH="$(date -u +%Y%m%dT%H%M%S)"
             docker compose up -d --no-build --wait --wait-timeout 120
             echo "[deploy] docker compose ps"
             docker compose ps
