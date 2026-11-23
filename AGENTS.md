@@ -18,3 +18,14 @@ Standalone internal TTS service for converting text into `audio/ogg` using a loc
 
 ## Notes
 This service is designed as a low-maintenance internal utility. It is not meant to become a full feature platform, but the structure allows quick fixes and future additions without coupling to client domains.
+
+## Deploy and security updates
+- Push to `main` -> `.github/workflows/deploy.yml`: tests + `pip-audit`, then
+  on the VPS `docker compose build --pull` + `up --wait` in
+  `/opt/dockge/stacks/tts-service`. Also weekly (Mon 02:17 UTC) and manually.
+- `SECURITY_REFRESH` (a timestamp per build) re-runs the `apt-get upgrade`
+  layer every time; keep it, or the build cache hides Debian fixes.
+- The `infra-vps.fix*` labels in `docker-compose.yml` let the infra-vps
+  security report offer a Telegram "🔧 Fix" button that runs this deploy
+  workflow (see infra-vps `docs/security-updates.md`). Dependabot PRs are
+  auto-merged when tests pass.
