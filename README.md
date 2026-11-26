@@ -74,7 +74,7 @@ Use `.env` or environment variables. See `.env.example`.
 The service ships with five English Piper voices:
 - `en_US_amy` — American English Amy (female)
 - `en_US_lessac` — American English Lessac (female)
-- `en_US_ryan` — American English Ryan (male)
+- `en_US_ryan` — American English Ryan (male, high quality model `en_US-ryan-high`; the others are `medium`)
 - `en_GB_alba` — British English Alba (female)
 - `en_GB_alan` — British English Alan (male)
 

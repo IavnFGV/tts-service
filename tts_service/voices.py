@@ -21,7 +21,7 @@ VOICE_CATALOG: Dict[str, Voice] = {
     "en_US_ryan": Voice(
         id="en_US_ryan",
         label="American English Ryan (male)",
-        model_name="en_US-ryan-medium",
+        model_name="en_US-ryan-high",
     ),
     "en_GB_alba": Voice(
         id="en_GB_alba",
